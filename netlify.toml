@@ -1,8 +1,10 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
+  external_node_modules = ["node-fetch"]
+  node_bundler = "esbuild"
 
 [[redirects]]
   from = "/proxy"
-  to = "/netlify/functions/proxy"
+  to = "/.netlify/functions/proxy"
   status = 200
