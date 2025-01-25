@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon"
+        href="https://cdn.discordapp.com/icons/1172933428199563336/3fc90db1fd477847e4dbab6a2f345132.webp?size=96"
+        type="image/webp">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <title>Raid Finder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7fc;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #91326e;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        #tableContainer {
+            overflow-x: auto;
+        }
+
+        input,
+        button {
+            padding: 12px 15px;
+            font-size: 1em;
+            margin-right: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        input {
+            width: 300px;
+        }
+
+        button {
+            background-color: #91326e;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #7a1f4b;
+        }
+
+        p {
+            font-size: 1em;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:first-child td:first-child {
+            border-top-left-radius: 10px;
+        }
+
+        tr:first-child td:last-child {
+            border-top-right-radius: 10px;
+        }
+
+        tr:last-child td:first-child {
+            border-bottom-left-radius: 10px;
+        }
+
+        tr:last-child td:last-child {
+            border-bottom-right-radius: 10px;
+        }
+
+        #errorAlert {
+            background-color: red;
+            color: white;
+            font-size: 1em;
+            margin-top: 10px;
+            justify-self: left;
+            text-align: center;
+            max-width: 250px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Raid Finder</h1>
+    <label for="urlInput">Enter an Autolycus Webpage URL:</label>
+    <input type="text" id="urlInput" placeholder="Enter URL here" />
+    <button onclick="fetchAndModifyTable()">Fetch Table</button>
+    <div id="errorAlert" style="display: none;"></div>
+    <p>Note that this finder is best used for nations that are inactive, not involved in any defensive wars and have
+        been beiged in the past 14 days. This is a result of the basic formula used to calculate expected loot relying
+        on these things. It retains the sorting ability of the Autolycus original and this can be used
+        to compensate for the aforementioned weaknesses. You could for example check the deposit history of active
+        nations, and the last war or beige loot of nations with high incomes and no last known war. The average raid
+        value averages the top 10 wars and is useful for determining good score ranges.</p>
+    <p id="avgres"><b>Average Raid Value:</b> ?</p>
+    <div id="tableContainer"></div>
+
+    <script>
+        function notifyError(message) {
+            const errorAlert = document.getElementById('errorAlert');
+            errorAlert.textContent = message;
+            errorAlert.style.display = 'block';
+            setTimeout(() => {
+                errorAlert.style.display = 'none';
+            }, 5000);
+        }
+
+        async function fetchAndModifyTable() {
+            const targetURL = document.getElementById('urlInput').value;
+            if (!targetURL) {
+                notifyError("Please enter a valid URL." || !targetURL.includes('/raids/'));
+                return;
+            }
+
+            const proxyURL = `/proxy?url=${encodeURIComponent(targetURL)}`;
+
+            try {
+                const response = await fetch(proxyURL);
+                if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`);
+                const html = await response.text();
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                const myTable = doc.getElementById('grid');
+                if (!myTable) {
+                    console.error('Table not found in the target page.');
+                    return;
+                }
+                const columnsToRender = [0, 1, 2, 3, 5, 7, 8, 9, 10, 14, 21];
+
+                for (let i = 0; i < myTable.rows.length; i++) {
+                    const row = myTable.rows[i];
+
+                    if (i === 0) {
+                    } else {
+                        const bText = row.cells[7]?.textContent.replace(/,/g, '');
+                        const b = bText == "NaN" ? 0 : parseFloat(bText);
+
+                        const cText = row.cells[9]?.textContent.replace(/,/g, '');
+                        const c = parseFloat(cText);
+
+                        const dText = row.cells[14]?.textContent.replace(/,/g, '');
+                        const d = dText == "14+" ? 14 : dText == "Ongoing" ? 0 : parseFloat(dText);
+
+                        let result = ((b == 0 ? 0 : (b / 0.1)) + (d * c)) * 0.14;
+                        if (row.cells[13]?.textContent == "1/3") {
+                            result *= 0.86;
+                        }
+                        if (row.cells[13]?.textContent == "2/3") {
+                            result *= 0.86;
+                            result *= 0.86;
+                        }
+
+                        row.cells[0].setAttribute('data-full-value', result.toFixed(2));
+                        row.cells[0].textContent = result.toFixed(2);
+                    }
+
+                    for (let j = row.cells.length - 1; j >= 0; j--) {
+                        if (!columnsToRender.includes(j)) {
+                            row.deleteCell(j);
+                        }
+                    }
+                }
+
+                myTable.rows[0].cells[0].innerHTML = `<abbr title="This assumes that NaN beige loot is 0 and 14+ days since war is 14 days. Assumes pirate raid war.">Expected Beige loot</abbr>`;
+
+                const sortedRows = Array.from(myTable.rows)
+                    .slice(1)
+                    .sort((a, b) => parseFloat(b.cells[0].textContent) - parseFloat(a.cells[0].textContent));
+
+                const top10Rows = sortedRows.slice(0, 10);
+                const sum = top10Rows.reduce((acc, row) => acc + parseFloat(row.cells[0].textContent), 0);
+                const average = sum / top10Rows.length;
+                document.getElementById('avgres').innerHTML = `<b>Average Raid Value:</b> $${average.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+                const headerRow = myTable.rows[0];
+                myTable.innerHTML = '';
+
+                if (headerRow) {
+                    myTable.appendChild(headerRow);
+                }
+
+                sortedRows.forEach(row => {
+                    let result = parseFloat(row.cells[0].textContent);
+                    if (Math.abs(result) >= 1000000) {
+                        row.cells[0].textContent = (result / 1000000).toFixed(2) + 'm';
+                    } else if (Math.abs(result) >= 1000) {
+                        row.cells[0].textContent = (result / 1000).toFixed(2) + 'k';
+                    }
+                    myTable.appendChild(row)
+                });
+
+                const headers = myTable.querySelectorAll('th');
+                headers.forEach((header, index) => {
+                    header.addEventListener('click', () => {
+                        sortTableByColumn(myTable, index);
+                    });
+                });
+
+                const tableContainer = document.getElementById('tableContainer');
+                tableContainer.innerHTML = '';
+                tableContainer.appendChild(myTable);
+
+            } catch (error) {
+                console.error('Error:', error);
+                notifyError('Failed to fetch the target page.');
+            }
+        }
+
+        function sortTableByColumn(table, columnIndex) {
+            const rows = Array.from(table.rows).slice(1);
+
+            const sortedRows = rows.sort((a, b) => {
+                if (columnIndex === 0) {
+                    const aFullValue = parseFloat(a.cells[columnIndex].getAttribute('data-full-value'));
+                    const bFullValue = parseFloat(b.cells[columnIndex].getAttribute('data-full-value'));
+                    return bFullValue - aFullValue;
+                }
+
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
+
+                const parseNumber = (text) => parseFloat(text.replace(/[,]/g, '').replace(/[.]/g, ''));
+
+                const aNumber = parseNumber(aText);
+                const bNumber = parseNumber(bText);
+
+                if (!isNaN(aNumber) && !isNaN(bNumber)) {
+                    return bNumber - aNumber;
+                } else {
+                    return aText.localeCompare(bText);
+                }
+            });
+
+            sortedRows.forEach(row => table.appendChild(row));
+        }
+    </script>
+</body>
+
+</html>
