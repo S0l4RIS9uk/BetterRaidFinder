@@ -1,6 +1,7 @@
-import fetch from 'node-fetch';
+// netlify/functions/fetch-webpage.js
+import fetch from 'node-fetch'; // Using ESM import
 
-exports.handler = async function (event, context) {
+export async function handler(event, context) {
   const { url } = event.queryStringParameters;
   if (!url) {
     return {
@@ -27,4 +28,4 @@ exports.handler = async function (event, context) {
       body: 'Error fetching the webpage.',
     };
   }
-};
+}
