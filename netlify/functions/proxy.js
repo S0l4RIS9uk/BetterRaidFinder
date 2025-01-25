@@ -14,7 +14,7 @@ router.get('/proxy', async (req, res) => {
   try {
     const response = await fetch(url);
     const html = await response.text();
-    res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=59');
+    res.setHeader('Cache-Control', 'maxage=600, stale-while-revalidate=59');
     res.send(html); // Send the page HTML directly
   } catch (error) {
     console.error('Error fetching the webpage:', error.message);
