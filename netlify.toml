@@ -1,7 +1,7 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
-  external_node_modules = ["node-fetch"]
+  external_node_modules = ["express"]
   node_bundler = "esbuild"
 
 [[redirects]]

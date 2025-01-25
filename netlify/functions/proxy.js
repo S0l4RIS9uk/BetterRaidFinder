@@ -1,4 +1,11 @@
-export default async function handler(req, res) {
+import express, { Router } from 'express';
+import serverless from 'serverless-http';
+
+const api = express();
+
+const router = Router();
+
+router.get('/proxy', async (req, res) => {
   const { url } = req.query;
   if (!url) {
     return res.status(400).send('Missing "url" query parameter.');
@@ -7,13 +14,13 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(url);
     const html = await response.text();
-
-    // Set cache headers for edge caching
-    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=59');
-
-    res.status(200).send(html);
+    res.send(html); // Send the page HTML directly
   } catch (error) {
     console.error('Error fetching the webpage:', error.message);
     res.status(500).send('Error fetching the webpage.');
   }
-}
+});
+
+api.use('/api/', router);
+
+export const handler = serverless(api);
