@@ -141,8 +141,8 @@
 
         async function fetchAndModifyTable() {
             const targetURL = document.getElementById('urlInput').value;
-            if (!targetURL) {
-                notifyError("Please enter a valid URL." || !targetURL.includes('/raids/'));
+            if (!targetURL || !targetURL.includes('/raids/')) {
+                notifyError("Please enter a valid URL.");
                 return;
             }
 
