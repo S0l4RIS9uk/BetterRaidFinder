@@ -1,31 +1,19 @@
-// netlify/functions/fetch-webpage.js
-import fetch from 'node-fetch'; // Using ESM import
-
-export async function handler(event, context) {
-  const { url } = event.queryStringParameters;
+export default async function handler(req, res) {
+  const { url } = req.query;
   if (!url) {
-    return {
-      statusCode: 400,
-      body: 'Missing "url" query parameter.',
-    };
+    return res.status(400).send('Missing "url" query parameter.');
   }
 
   try {
     const response = await fetch(url);
     const html = await response.text();
-    return {
-      statusCode: 200,
-      headers: {
-        'Cache-Control': 's-maxage=600, stale-while-revalidate=59',
-        'Content-Type': 'text/html; charset=utf-8',
-      },
-      body: html,
-    };
+
+    // Set cache headers for edge caching
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=59');
+
+    res.status(200).send(html);
   } catch (error) {
     console.error('Error fetching the webpage:', error.message);
-    return {
-      statusCode: 500,
-      body: 'Error fetching the webpage.',
-    };
+    res.status(500).send('Error fetching the webpage.');
   }
 }
