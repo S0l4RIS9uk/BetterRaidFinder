@@ -4,5 +4,5 @@
 
 [[redirects]]
   from = "/proxy"
-  to = "/.netlify/functions/proxy"
+  to = "/netlify/functions/proxy"
   status = 200
