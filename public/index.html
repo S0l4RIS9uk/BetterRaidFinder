@@ -116,9 +116,16 @@
 
 <body>
     <h1>Raid Finder</h1>
-    <label for="urlInput">Enter an Autolycus Webpage URL:</label>
-    <input type="text" id="urlInput" placeholder="Enter URL here" />
-    <button onclick="fetchAndModifyTable()">Fetch Table</button>
+    <div class="input-row">
+        <label for="urlInput">Enter an Autolycus Webpage URL:</label>
+        <input type="text" id="urlInput" placeholder="Enter URL here" />
+        <button onclick="fetchAndModifyTable()">Fetch Table</button>
+    </div>
+    <div class="input-row" style="margin-top: 10px;">
+        <label for="idInput">Enter a comma separated list of alliance ids:</label>
+        <input type="text" id="idInput" placeholder="Enter comma separated list of ids" />
+        <button onclick="filterTable()">Filter</button>
+    </div>
     <div id="errorAlert" style="display: none;"></div>
     <p>Note that this finder is best used for nations that are inactive, not involved in any defensive wars and have
         been beiged in the past 14 days. This is a result of the basic formula used to calculate expected loot relying
@@ -332,6 +339,44 @@
                 return primaryComparison;
             });
             sortedRows.forEach(row => table.appendChild(row));
+        }
+
+        function filterTable() {
+            const input = document.getElementById('idInput').value.trim();
+
+            // If no input, show all rows
+            const ids = input === '' ? [] : input.split(',').map(s => s.trim()).filter(Boolean).map(Number).filter(n => !isNaN(n));
+            const idSet = new Set(ids);
+
+            const table = document.querySelector('#tableContainer table') || document.getElementById('grid');
+            if (!table) {
+                notifyError('No table to filter. Please fetch a table first.');
+                return;
+            }
+
+            const rows = Array.from(table.rows).slice(1);
+            if (idSet.size === 0) {
+                // Show all rows
+                rows.forEach(r => r.style.display = '');
+                return;
+            }
+
+            rows.forEach(row => {
+                // Try to find an anchor linking to an alliance id inside the row
+                const a = row.querySelector('a[href*="alliance/id="]') || row.querySelector('a[href*="/alliance/id="]');
+                let allianceId = null;
+                if (a && a.getAttribute('href')) {
+                    const href = a.getAttribute('href');
+                    const m = href.match(/alliance\/?id=(\d+)/);
+                    if (m) allianceId = Number(m[1]);
+                }
+
+                if (allianceId !== null && idSet.has(allianceId)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         }
 
     </script>
