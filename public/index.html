@@ -137,6 +137,44 @@
     <div id="tableContainer"></div>
 
     <script>
+        const ID_STORAGE_KEY = 'rf_alliance_ids_v1';
+
+        function loadSavedIds() {
+            try {
+                const raw = localStorage.getItem(ID_STORAGE_KEY);
+                if (!raw) return '';
+                return raw;
+            } catch (e) {
+                console.warn('Failed to load saved ids from localStorage', e);
+                return '';
+            }
+        }
+
+        function saveIds(value) {
+            try {
+                if (value == null) value = '';
+                localStorage.setItem(ID_STORAGE_KEY, value);
+            } catch (e) {
+                console.warn('Failed to save ids to localStorage', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const idInput = document.getElementById('idInput');
+            if (idInput) {
+                const saved = loadSavedIds();
+                if (saved) idInput.value = saved;
+
+                let saveTimeout;
+                const debouncedSave = () => {
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => saveIds(idInput.value.trim()), 300);
+                };
+
+                idInput.addEventListener('input', debouncedSave);
+            }
+        });
+
         function notifyError(message) {
             const errorAlert = document.getElementById('errorAlert');
             errorAlert.textContent = message;
